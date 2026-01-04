@@ -1,0 +1,47 @@
+material BookTag/ShelfA
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+        texture SHELF_A.png
+        scale 1.0 1.0
+      }
+    }
+  }
+}
+
+material BookTag/ShelfB
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+        texture SHELF_B.png
+        scale 1.0 1.0
+      }
+    }
+  }
+}
+
+material BookTag/ShelfC
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+        texture SHELF_C.png
+        scale 1.0 1.0
+      }
+    }
+  }
+}

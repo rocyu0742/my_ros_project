@@ -1,0 +1,36 @@
+<launch>
+  <!-- ME48B Library Robot - Navigation Launch -->
+  <arg name="model" default="burger"/>
+  <arg name="map_file" default="$(find me48b_library_robot)/maps/library_map.yaml"/>
+  <arg name="open_rviz" default="true"/>
+  <arg name="move_forward_only" default="false"/>
+
+  <!-- Robot State Publisher (publishes TF tree based on URDF) -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="50.0" />
+  </node>
+
+  <!-- Map Server -->
+  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+
+  <!-- AMCL -->
+  <include file="$(find turtlebot3_navigation)/launch/amcl.launch"/>
+
+  <!-- move_base -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
+    <rosparam file="$(find me48b_library_robot)/config/costmap_common.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find me48b_library_robot)/config/costmap_common.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find me48b_library_robot)/config/local_costmap.yaml" command="load" />
+    <rosparam file="$(find me48b_library_robot)/config/global_costmap.yaml" command="load" />
+    <rosparam file="$(find me48b_library_robot)/config/move_base.yaml" command="load" />
+    <rosparam file="$(find me48b_library_robot)/config/dwa_local_planner.yaml" command="load" />
+    <param name="DWAPlannerROS/min_vel_x" value="0.0" if="$(arg move_forward_only)" />
+  </node>
+
+  <!-- RViz -->
+  <group if="$(arg open_rviz)"> 
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find turtlebot3_navigation)/rviz/turtlebot3_navigation.rviz"/>
+  </group>
+</launch>

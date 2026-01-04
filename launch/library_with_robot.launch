@@ -1,0 +1,25 @@
+<launch>
+  <!-- ME48B Library Robot - Full Environment with Robot -->
+  <!-- Launches library world AND spawns the robot -->
+
+  <arg name="gui" default="true"/>
+  <arg name="model" default="burger"/>
+  <arg name="x_pos" default="0.5"/>
+  <arg name="y_pos" default="1.0"/>
+
+  <!-- Set TurtleBot3 model -->
+  <env name="TURTLEBOT3_MODEL" value="$(arg model)"/>
+
+  <!-- Launch library world -->
+  <include file="$(find me48b_library_robot)/launch/bookstore.launch">
+    <arg name="gui" value="$(arg gui)"/>
+  </include>
+
+  <!-- Spawn robot -->
+  <include file="$(find me48b_library_robot)/launch/robot_spawn.launch">
+    <arg name="model" value="$(arg model)"/>
+    <arg name="x_pos" value="$(arg x_pos)"/>
+    <arg name="y_pos" value="$(arg y_pos)"/>
+  </include>
+
+</launch>

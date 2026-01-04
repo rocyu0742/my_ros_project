@@ -1,0 +1,29 @@
+<launch>
+  <!-- ME48B Library Robot - Robot Spawn Launch File -->
+  <!-- Spawns TurtleBot3 into the library environment -->
+
+  <!-- Robot model selection: burger, waffle, or waffle_pi -->
+  <arg name="model" default="burger" doc="TurtleBot3 model type"/>
+  
+  <!-- Initial robot position -->
+  <arg name="x_pos" default="0.5"/>
+  <arg name="y_pos" default="1.0"/>
+  <arg name="z_pos" default="0.1"/>
+  <arg name="yaw" default="0.0"/>
+
+  <param name="robot_description" 
+         command="$(find xacro)/xacro --inorder $(find me48b_library_robot)/urdf/turtlebot3_forklift.urdf.xacro"/>
+
+  <!-- Load Forklift Controller Parameters -->
+  <rosparam file="$(find me48b_library_robot)/config/forklift_control.yaml" command="load"/>
+
+  <!-- Spawn Forklift Controllers -->
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" args="joint_state_controller fork_joint_position_controller"/>
+
+  <!-- Spawn the robot in Gazebo -->
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" 
+        args="-urdf -model turtlebot3_$(arg model) -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -Y $(arg yaw) -param robot_description"/>
+
+  <!-- Robot State Publisher removed to avoid conflict with turtlebot3_remote.launch -->
+</launch>

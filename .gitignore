@@ -1,0 +1,25 @@
+# ROS
+build/
+devel/
+install/
+logs/
+.catkin_workspace
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Temporary & System
+.DS_Store
+*~
+*.swp
+.vscode/
+.idea/
+
+# Custom
+*.bag
+*.pgm
+# Keep the maps we made, but maybe ignore huge ones? No, keep them.

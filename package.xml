@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>me48b_library_robot</name>
+  <version>1.0.0</version>
+  <description>
+    ME48B Introduction to Mobile Robotics - Library Book Organization Robot Project.
+    A simulation environment featuring a library with bookshelves, tables, and navigation areas.
+    Includes an autonomous robot for book organization tasks.
+  </description>
+  <license>MIT</license>
+  <author email="student@university.edu">ME48B Project Team</author>
+  <maintainer email="student@university.edu">ME48B Project Team</maintainer>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>gazebo</exec_depend>
+  <exec_depend>gazebo_plugins</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
+
+  <export>
+    <gazebo_ros plugin_path="${prefix}/lib" gazebo_media_path="${prefix}" gazebo_model_path="${prefix}/models"/>
+  </export>
+</package>

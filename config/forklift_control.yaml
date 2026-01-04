@@ -1,0 +1,9 @@
+# Forklift Joint Controller Parameters
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50
+
+fork_joint_position_controller:
+  type: position_controllers/JointPositionController
+  joint: fork_joint
+  pid: {p: 100.0, i: 0.01, d: 10.0}
