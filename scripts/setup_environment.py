@@ -56,6 +56,7 @@ def spawn_book_at_station(station_id, pkg_path, color="red"):
     # S2: DeskB (Far East)
     S2 = (5.378602, 0.405931, 0.908775)
     # S3: DeskA (North West) - Height matched to S1
+    # S3: DeskA (North West) - Height matched to S1
     S3 = (-2.795135, 2.816197, 1.031435)
 
     coords = None

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>ROS System Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .mermaid {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>1. ROS Computation Graph (Nodes & Topics)</h2>
+        <p>This diagram shows how nodes communicate via Topics and Actions.</p>
+        <div class="mermaid">
+            graph TD
+            %% Nodes
+            Mission[/"/continuous_library_mission"/]
+            QR[/"/qr_reader"/]
+            Gazebo[/"/gazebo (Sim)"/]
+            MoveBase[/"/move_base"/]
+            MapServer[/"/map_server"/]
+            RSP[/"/robot_state_publisher"/]
+
+            %% Styles
+            style Mission fill:#d4f1f4,stroke:#189ab4,stroke-width:2px;
+            style QR fill:#d4f1f4,stroke:#189ab4,stroke-width:2px;
+            style Gazebo fill:#ffe2e2,stroke:#ff4444,stroke-width:2px;
+            style MoveBase fill:#e2f0cb,stroke:#88c425,stroke-width:2px;
+
+            %% Camera Flow
+            Gazebo -- "/custom_camera/image_raw" --> QR
+            QR -- "/detected_qr" --> Mission
+            QR -- "/detected_qr_metric" --> Mission
+
+            %% Motion Control
+            Mission -- "/cmd_vel" --> MoveBase
+            Mission -- "/fork_joint.../command" --> Gazebo
+            MoveBase -- "/cmd_vel" --> Gazebo
+
+            %% Localization & Nav
+            Gazebo -- "/scan" --> MoveBase
+            Gazebo -- "/joint_states" --> Mission
+            Gazebo -- "/joint_states" --> RSP
+            MapServer -- "/map" --> MoveBase
+            MapServer -- "/map" --> Mission
+
+            %% Action
+            Mission -.- "Action: MoveBaseGoal" -.- MoveBase
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>2. TF Tree (Transform Hierarchy)</h2>
+        <p>This illustrates the coordinate frame relationships.</p>
+        <div class="mermaid">
+            graph TD
+            Map((map))
+            Odom((odom))
+            BaseFoot((base_footprint))
+            BaseLink((base_link))
+
+            subgraph RobotParts [Robot Model]
+            Scan((base_scan))
+            Cam((camera_link))
+            Fork((fork_link))
+            Caster((caster_link))
+            Wheels((wheel_links))
+            end
+
+            %% Transforms
+            Map -- "/amcl" --> Odom
+            Odom -- "/gazebo" --> BaseFoot
+            BaseFoot -- "/robot_state_publisher" --> BaseLink
+
+            BaseLink --> Scan
+            BaseLink --> Cam
+            BaseLink --> Fork
+            BaseLink --> Caster
+            BaseLink --> Wheels
+
+            %% Styling
+            classDef frame fill:#ffffff,stroke:#333,stroke-width:2px;
+            class Map,Odom,BaseFoot,BaseLink,Scan,Cam,Fork,Caster,Wheels frame;
+        </div>
+    </div>
+
+</body>
+
+</html>

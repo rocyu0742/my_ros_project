@@ -24,22 +24,21 @@ class ContinuousMission:
         # Strategy: Approach from East (+X) side, Face West (-X)
         self.STATIONS = {
             1: {'pickup': (0.0, 0.8, 1.0, 0.0),    'book_model': 'book_s1'},
-            2: {'pickup': (6.0, 0.4, 1.0, 0.0),    'book_model': 'book_s2'},
-            3: {'pickup': (-2.0, 2.8, 1.0, 0.0),   'book_model': 'book_s3'}
+            # S2 Adjusted: Moved to 4.6 (Sweet spot between stuck and too far)
+            2: {'pickup': (4.6, 0.4, 0.0, 1.0),    'book_model': 'book_s2'},
+            # S3 Adjusted: Table at (-2.8, 2.8). Robot at (-2.8, 2.1). Face North (+Y)
+            # S3 Adjusted: Robot at (-2.8, 2.1). Face West (180 deg) as requested
+            3: {'pickup': (-2.8, 2.1, 1.0, 0.0),   'book_model': 'book_s3'}
         }
         
         # Dropoff Locations (Shelves)
         # Dropoff Locations (Shelves)
         self.SHELVES = {
-            "SHELF_A": (0.0, -3.0, 1.0, 0.0), # Old C is now A? Or User wants specific?
-            # User asked "Where are they?". I'll check the world file or keep default.
-            # Actually, I will just keep them as they were, but clean up the comment.
-            # Wait, the user asked "What are the points?". I should just tell them.
-            # But I see in my thought I said I'd update them. 
-            # Let's stick to the previous defined ones unless user gave new ones.
-            # The previous ones were:
-            "SHELF_A": (1.4, -0.5, 0.707, 0.707),
-            "SHELF_B": (-2.5, -0.5, 0.0, 1.0),
+            # Shelf A: East Side. Approach Point (0.8). Blind Docking will drive to 1.45.
+            "SHELF_A": (0.8, -0.5, 0.0, 1.0),
+            # Shelf B: West Side. Approach (-1.9). Face West (1.0, 0.0). Blind Dock -> -2.55
+            "SHELF_B": (-1.9, -0.5, 1.0, 0.0),
+            # Shelf C: South Side. Reverted to direct (-3.0).
             "SHELF_C": (0.0, -3.0, 1.0, 0.0)
         }
         
@@ -269,9 +268,16 @@ class ContinuousMission:
                     twist.linear.x = 0.04 
                     rospy.loginfo(f"   ⬆️ Approaching... Area: {area:.0f} H:{self.current_fork_height:.2f}")
                 else:
-                    rospy.loginfo(f"✅ Target Reached! Area: {area}")
-                    locked = True
-                    break
+                    # Area is good, but are we aligned?
+                    if abs(error_x) < 30 and abs(error_y) < 30:
+                        rospy.loginfo(f"✅ Target Reached & Aligned! Area: {area} X_err:{error_x} Y_err:{error_y}")
+                        locked = True
+                        break
+                    else:
+                        # Close enough but not aligned yet. Stop moving forward, just adjust.
+                        twist.linear.x = 0.0
+                        twist.angular.z = Kp_ang * error_x 
+                        rospy.logwarn_throttle(0.5, f"⚠️ Close but correcting alignment... X:{error_x} Y:{error_y}")
                 
             self.vel_pub.publish(twist)
             rate.sleep()
@@ -363,10 +369,26 @@ class ContinuousMission:
                  # 7. Backup
                  self.backup_maneuver()
                  
-                 # 8. Lower to Carry
-                 self.move_fork(0.1)
+                 # 8. Lower to Carry (But keep high enough to clear Lidar!)
+                 self.move_fork(0.4)
         else:
              rospy.logerr("❌ Visual Servoing Failed. Aborting Pickup.")
+
+    def blind_move(self, distance, speed):
+        """Moves robot open-loop (without navigation) for specific distance"""
+        rospy.loginfo(f"🙈 Blind Move: Dist={distance}, Speed={speed}")
+        twist = Twist()
+        twist.linear.x = speed
+        
+        duration = distance / abs(speed)
+        end_time = time.time() + duration
+        
+        rate = rospy.Rate(10)
+        while time.time() < end_time and not rospy.is_shutdown():
+            self.vel_pub.publish(twist)
+            rate.sleep()
+        
+        self.vel_pub.publish(Twist()) # Stop
 
     def perform_dropoff(self):
         # Decide shelf based on QR
@@ -380,17 +402,38 @@ class ContinuousMission:
         rospy.loginfo(f"🚚 Delivering to {self.latest_qr}...")
         self.move_to(*shelf_target)
         
-        # Dropoff Sequence
-        self.move_fork(0.9) 
-        rospy.loginfo("💨 MAGNET OFF - Detaching...")
-        self.carrying_book = False # Magnet stops updating
-        time.sleep(0.5)
-        
-        # Backup
-        self.backup_maneuver()
+        if self.latest_qr == "SHELF_C":
+            # --- NORMAL DROPOFF (Direct Nav) ---
+            rospy.loginfo("⚓ Docking to Shelf C (Standard Navigation)...")
+            # Already at target (-3.0)
+            
+            # Dropoff Sequence
+            self.move_fork(0.9) 
+            rospy.loginfo("💨 MAGNET OFF - Detaching...")
+            self.carrying_book = False 
+            time.sleep(0.5)
+            
+            # Backup (Standard)
+            self.backup_maneuver()
+            
+        else:
+            # --- BLIND STOCKING (Approach + Push) ---
+            # Used for Shelf A and B to avoid collision costmap issues
+            rospy.loginfo("⚓ Docking to Shelf (Blind Approach)...")
+            self.blind_move(0.65, 0.15) # Move forward 65cm
+            
+            # Dropoff Sequence
+            self.move_fork(0.9) 
+            rospy.loginfo("💨 MAGNET OFF - Detaching...")
+            self.carrying_book = False 
+            time.sleep(0.5)
+            
+            # Backup (Blind)
+            rospy.loginfo("🔙 Backing up from Shelf...")
+            self.blind_move(0.8, -0.2) # Backup 80cm
         
         # Reset Fork
-        self.move_fork(0.0)
+        self.move_fork(0.05)
 
 if __name__ == '__main__':
     mission = ContinuousMission()

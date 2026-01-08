@@ -306,26 +306,8 @@
         <pose frame="">-6.235609 -3.785181 1.038157 0.000008 0 1.580378</pose>
 	</model>
 
-	<model name="BookF_01_004">
-        <include>
-            <uri>model://aws_robomaker_retail_BookF_01</uri>
-        </include>
-        <pose frame="">1.261644 0.856469 1.038157 0.000008 0 1.580378</pose>
-	</model>
 
-	<model name="BookD_01_004">
-        <include>
-            <uri>model://aws_robomaker_retail_BookD_01</uri>
-        </include>
-        <pose frame="">2.358626 0.854853 1.038153 0.000006 0 0.001712</pose>
-	</model>
 
-	<model name="BookF_01_005">
-        <include>
-            <uri>model://aws_robomaker_retail_BookF_01</uri>
-        </include>
-        <pose frame="">3.430611 0.856469 1.038157 0.000008 0 1.580378</pose>
-	</model>
              
        <model name="BookshelfA_01_001">
         <include>

@@ -1,0 +1,69 @@
+flowchart LR
+    Start([Start]) --> Init[Init Node]
+    Init --> Loop{Main Loop}
+    
+    Loop --> CheckCarry{Carrying?}
+    
+    %% --- IDLE BRANCH ---
+    CheckCarry -- No --> CheckBooks[Check Books]
+    CheckBooks --> FoundBook{Found?}
+    
+    FoundBook -- No --> CheckIdle{At Idle?}
+    CheckIdle -- No --> MoveIdle[Move Idle]
+    CheckIdle -- Yes --> Wait[Wait]
+    MoveIdle --> Loop
+    Wait --> Loop
+    
+    %% --- PICKUP BRANCH ---
+    FoundBook -- Yes --> PickupStart
+    
+    subgraph Pickup [Pickup Logic]
+        direction LR
+        PickupStart(Start) --> MoveSt[Move]
+        MoveSt --> Fork0[Lower Fork]
+        Fork0 --> Search[Search QR]
+        Search --> Vis{Visible?}
+        
+        Vis -- Yes --> VServo[Visual Servo]
+        VServo --> Lock{Locked?}
+        
+        Lock -- Yes --> Appr[Approach]
+        Appr --> MagOn[Mag ON]
+        MagOn --> Lift[Lift]
+        Lift --> Back[Backup]
+        Back --> Carry[Carry Pos]
+        Carry --> PEnd(Done)
+        
+        Vis -- No --> PAbort(Abort)
+        Lock -- No --> PAbort
+    end
+    
+    PEnd --> Loop
+    PAbort --> Loop
+    
+    %% --- DROPOFF BRANCH ---
+    CheckCarry -- Yes --> DropStart
+    
+    subgraph Dropoff [Dropoff Logic]
+        direction LR
+        DropStart(Start Drop) --> ID{Check QR}
+        ID -->|Known| Sel[Specific]
+        ID -->|Unknown| Def[Default]
+        
+        Sel --> MoveSh[Move]
+        Def --> MoveSh
+        
+        MoveSh --> LiftHi[Lift High]
+        LiftHi --> MagOff[Mag OFF]
+        MagOff --> BackD[Backup]
+        BackD --> ForkR[Reset Fork]
+        ForkR --> DEnd(Done)
+    end
+    
+    DEnd --> Loop
+
+    %% Styling
+    classDef state fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef decision fill:#ff9,stroke:#333,stroke-width:2px;
+    class Loop,CheckCarry,FoundBook,Vis,Lock,ID,CheckIdle decision;
+    class PickupStart,DropStart state;

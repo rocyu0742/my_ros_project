@@ -51,9 +51,19 @@ class RobotControlPanel:
         btn_setup = tk.Button(btn_frame, text="🛠️ Setup Stations", command=self.run_setup_stations, bg="#ccffcc")
         btn_setup.grid(row=0, column=2, padx=5, pady=5)
         
-        # 1b. Auto-Mapping (NEW!)
-        btn_automap = tk.Button(btn_frame, text="🗺️ AUTO-MAP", command=self.run_auto_map, bg="#e6ccff", font=("Arial", 9, "bold"))
-        btn_automap.grid(row=1, column=0, padx=5, pady=5)
+
+
+        # --- SIMULATION SPEED CONTROL ---
+        sim_frame = tk.LabelFrame(btn_frame, text="⏱️ Sim Speed", font=("Arial", 8))
+        sim_frame.grid(row=1, column=1, columnspan=2, sticky="we", padx=5)
+        
+        self.lbl_speed = tk.Label(sim_frame, text="1.0x")
+        self.lbl_speed.pack(side=tk.LEFT, padx=5)
+        
+        # Scale from 0.1x to 10.0x
+        self.scale_speed = tk.Scale(sim_frame, from_=0.1, to=10.0, orient=tk.HORIZONTAL, resolution=0.1, showvalue=0, command=self.update_sim_speed)
+        self.scale_speed.set(1.0)
+        self.scale_speed.pack(side=tk.RIGHT, fill=tk.X, expand=True)
 
         # 2. Book Controls (Shifted down to make room for AUTO-MAP)
         lbl_col = tk.Label(btn_frame, text="Select Color:")
@@ -78,9 +88,13 @@ class RobotControlPanel:
         btn_clear_books = tk.Button(btn_frame, text="🗑️ Clear Books", command=self.run_clear_books, bg="#ffe6e6")
         btn_clear_books.grid(row=5, column=0, columnspan=3, pady=5, sticky="we")
 
-        # 5. Mission
+        # 5. Localization
+        btn_reset_loc = tk.Button(btn_frame, text="📍 FIX POSITION (0.5, 1.0)", command=self.run_reset_loc, bg="#ccf2ff")
+        btn_reset_loc.grid(row=6, column=0, columnspan=3, padx=5, pady=2, sticky="we")
+
+        # 6. Mission
         btn_mission = tk.Button(btn_frame, text="🚀 START MISSION", command=self.run_mission, bg="#ffffcc", font=("Arial", 10, "bold"))
-        btn_mission.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
+        btn_mission.grid(row=7, column=0, columnspan=3, padx=5, pady=10)
 
         # 6. Stop
         btn_stop = tk.Button(root, text="🛑 STOP ALL / RESET", command=self.stop_all, bg="red", fg="white")
@@ -134,15 +148,30 @@ class RobotControlPanel:
         self.log("--> Setting up Stations...")
         subprocess.Popen(["python3", f"{self.pkg_path}/scripts/setup_environment.py", "--stations"], env=self.env)
 
-    def run_auto_map(self):
-        self.log("--> 🗺️ STARTING AUTO-MAPPING...")
-        self.log("    Robot will explore and build map automatically.")
-        self.log("    Map will be saved to maps/library_map when complete.")
-        cmd = f"xterm -e 'roslaunch {self.pkg_path}/launch/mapping_auto.launch; read'"
+
+
+    def update_sim_speed(self, val):
         try:
-            subprocess.Popen(cmd, shell=True, env=self.env)
-        except:
-            self.log("⚠️ Failed to launch auto-mapper.")
+            speed = float(val)
+            self.lbl_speed.config(text=f"{speed:.1f}x")
+            
+            # Default Physics:
+            # step_size = 0.001 (1ms)
+            # update_rate = 1000 (1ms * 1000 = 1s simulated / 1s real)
+            
+            # To speed up 2x:
+            # update_rate = 2000
+            
+            base_rate = 1000
+            new_rate = int(base_rate * speed)
+            
+            # Run gz physics command
+            # gz physics -u 2000
+            cmd = ["gz", "physics", "-u", str(new_rate)]
+            subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+        except Exception as e:
+            print(f"Error setting speed: {e}")
 
     def run_spawn_book(self, sid):
         # Direct access is safer than StringVar if binding fails
@@ -161,8 +190,19 @@ class RobotControlPanel:
         p = subprocess.Popen(["python3", f"{self.pkg_path}/scripts/qr_reader.py"], env=self.env)
         self.processes.append(p)
 
+    def run_reset_loc(self):
+        self.log("--> 📍 Resetting AMCL Localization to (0.5, 1.0)...")
+        # Publish initial pose to AMCL matchin Spawn Location (0.5, 1.0)
+        cmd = [
+            "rostopic", "pub", "-1", "/initialpose", "geometry_msgs/PoseWithCovarianceStamped",
+            "{header: {frame_id: 'map'}, pose: {pose: {position: {x: 0.5, y: 1.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}, covariance: [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.068]}}"
+        ]
+        subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
     def run_mission(self):
+        # Optional: Auto-reset loc on mission start? No, let user do it.
         # Auto-start QR Reader
+
         self.run_qr()
         
         self.log("--> 🚀 LAUNCHING MISSION! Check Terminal for details...")

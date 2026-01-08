@@ -36,8 +36,8 @@ def clean_world():
         set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         robot_state = ModelState()
         robot_state.model_name = "turtlebot3_burger" # Correct name from Gazebo
-        robot_state.pose.position.x = 0.0
-        robot_state.pose.position.y = 0.0
+        robot_state.pose.position.x = 0.5
+        robot_state.pose.position.y = 1.0
         robot_state.pose.position.z = 0.05
         robot_state.pose.orientation.x = 0.0
         robot_state.pose.orientation.y = 0.0
@@ -46,7 +46,7 @@ def clean_world():
         
         try:
             set_state(robot_state)
-            print("🤖 Robot reset to Home (0,0) in Gazebo")
+            print("🤖 Robot reset to Home (0.5, 1.0) in Gazebo")
         except rospy.ServiceException as e:
             print(f"⚠️ Could not reset robot: {e}")
         
@@ -58,8 +58,8 @@ def clean_world():
         initial_pose = PoseWithCovarianceStamped()
         initial_pose.header.frame_id = "map"
         initial_pose.header.stamp = rospy.Time.now()
-        initial_pose.pose.pose.position.x = 0.0
-        initial_pose.pose.pose.position.y = 0.0
+        initial_pose.pose.pose.position.x = 0.5
+        initial_pose.pose.pose.position.y = 1.0
         initial_pose.pose.pose.position.z = 0.0
         initial_pose.pose.pose.orientation.x = 0.0
         initial_pose.pose.pose.orientation.y = 0.0
@@ -74,7 +74,7 @@ def clean_world():
             amcl_pub.publish(initial_pose)
             time.sleep(0.2)
         
-        print("🗺️ AMCL position synced to (0,0)")
+        print("🗺️ AMCL position synced to (0.5, 1.0)")
     
         # 3. Reset Forklift (Publish 0.0 to controller)
         from std_msgs.msg import Float64
